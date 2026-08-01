@@ -134,17 +134,13 @@ async def get_users():
 
     async with db.acquire() as conn:
 
-        rows = await conn.fetch("""
+       rows = await conn.fetch("""
+    SELECT *
+    FROM users
+    ORDER BY id
+""")
 
-            SELECT *
-
-            FROM users
-
-            ORDER BY id
-
-        """)
-
-        return rows
+return [tuple(row) for row in rows]
 
 
 
@@ -215,7 +211,7 @@ async def get_admins():
             """
         )
 
-        return rows
+        return [tuple(row) for row in rows]
 
 
 
@@ -294,17 +290,15 @@ async def get_events():
 
     async with db.acquire() as conn:
 
-        rows = await conn.fetch(
-            """
-            SELECT *
+       rows = await conn.fetch(
+    """
+    SELECT *
+    FROM events
+    ORDER BY id DESC
+    """
+)
 
-            FROM events
-
-            ORDER BY id DESC
-            """
-        )
-
-        return rows
+return [tuple(row) for row in rows]
 
 
 # =========================
@@ -424,7 +418,10 @@ async def get_alliance():
             """
         )
 
-        return row
+        if row:
+    return tuple(row)
+
+return None
 
 
 
