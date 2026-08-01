@@ -161,17 +161,10 @@ async def check_events():
 
 
 
-            event_datetime = now.replace(
-
-                hour=int(hour),
-
-                minute=int(minute),
-
-                second=0,
-
-                microsecond=0
-
-            )
+            event_datetime = datetime.strptime(
+    f"{event_date} {event_time}",
+    "%d.%m.%Y %H:%M"
+)
 
 
 
