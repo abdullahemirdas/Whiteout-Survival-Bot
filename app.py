@@ -1,7 +1,5 @@
 import asyncio
 import os
-import signal
-import sys
 
 from aiohttp import web
 from aiogram import Bot, Dispatcher
@@ -22,39 +20,7 @@ from handlers import (
 
 from scheduler import (
     start_scheduler,
-    set_bot,
-    stop_scheduler
-)
-
-
-# =========================
-# SIGTERM YAKALA
-# =========================
-
-def handle_sigterm(signum, frame):
-
-    print(
-        "⚠️ Received SIGTERM signal",
-        flush=True
-    )
-
-    try:
-        stop_scheduler()
-
-    except Exception as e:
-
-        print(
-            "Scheduler kapatma hatası:",
-            e,
-            flush=True
-        )
-
-    sys.exit(0)
-
-
-signal.signal(
-    signal.SIGTERM,
-    handle_sigterm
+    set_bot
 )
 
 
@@ -67,6 +33,7 @@ async def health_check(request):
     return web.Response(
         text="Whiteout ATA Bot aktif"
     )
+
 
 
 # =========================
@@ -114,7 +81,7 @@ async def start_web_server():
 
 
 # =========================
-# BOT
+# BOT BAŞLAT
 # =========================
 
 async def start_bot():
@@ -128,12 +95,14 @@ async def start_bot():
     await init_db()
 
 
+
     bot = Bot(
         token=BOT_TOKEN
     )
 
 
     set_bot(bot)
+
 
 
     dp = Dispatcher()
@@ -173,6 +142,7 @@ async def start_bot():
     )
 
 
+
     print(
         "⏰ Scheduler başlatılıyor...",
         flush=True
@@ -182,10 +152,12 @@ async def start_bot():
     start_scheduler()
 
 
+
     print(
         "🤖 Whiteout ATA Bot Başlatıldı",
         flush=True
     )
+
 
 
     try:
@@ -197,34 +169,13 @@ async def start_bot():
 
     finally:
 
-
         print(
             "Bot kapatılıyor...",
             flush=True
         )
 
 
-        try:
-
-            stop_scheduler()
-
-
-        except Exception as e:
-
-            print(
-                "Scheduler kapatma hatası:",
-                e,
-                flush=True
-            )
-
-
         await bot.session.close()
-
-
-        print(
-            "Bot bağlantısı kapatıldı",
-            flush=True
-        )
 
 
 
@@ -256,7 +207,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
 
         print(
-            "Manuel durduruldu",
+            "Bot manuel durduruldu",
             flush=True
         )
 
