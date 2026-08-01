@@ -1,9 +1,24 @@
-import aiosqlite
+import asyncpg
 
 from datetime import datetime
 
+from config import DATABASE_URL
 
-DATABASE = "bot_database.db"
+pool = None
+
+
+async def get_pool():
+    global pool
+
+    if pool is None:
+
+        pool = await asyncpg.create_pool(
+            DATABASE_URL,
+            min_size=1,
+            max_size=5
+        )
+
+    return pool
 
 
 
@@ -13,30 +28,33 @@ DATABASE = "bot_database.db"
 
 async def init_db():
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS users (
+        await conn.execute("""
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS users(
 
-            telegram_id INTEGER UNIQUE,
+            id BIGSERIAL PRIMARY KEY,
+
+            telegram_id BIGINT UNIQUE,
 
             username TEXT,
 
             first_name TEXT,
 
-            is_admin INTEGER DEFAULT 0
-        )
+            is_admin BOOLEAN DEFAULT FALSE
+
+        );
+
         """)
 
+        await conn.execute("""
 
+        CREATE TABLE IF NOT EXISTS events(
 
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS events (
-
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id BIGSERIAL PRIMARY KEY,
 
             name TEXT,
 
@@ -49,13 +67,14 @@ async def init_db():
             last_run TEXT,
 
             reminder_sent TEXT DEFAULT ''
-        )
+
+        );
+
         """)
 
+        await conn.execute("""
 
-
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS alliance (
+        CREATE TABLE IF NOT EXISTS alliance(
 
             id INTEGER PRIMARY KEY,
 
@@ -68,11 +87,10 @@ async def init_db():
             rules TEXT,
 
             description TEXT
-        )
+
+        );
+
         """)
-
-
-        await db.commit()
 
 
 
@@ -82,47 +100,51 @@ async def init_db():
 
 async def add_user(user):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        INSERT OR IGNORE INTO users
-        (
-            telegram_id,
-            username,
-            first_name
-        )
+        await conn.execute(
+            """
+            INSERT INTO users
+            (
+                telegram_id,
+                username,
+                first_name
+            )
+            VALUES ($1,$2,$3)
 
-        VALUES (?,?,?)
-        """,
-
-        (
+            ON CONFLICT (telegram_id)
+            DO NOTHING
+            """,
             user.id,
             user.username,
             user.first_name
-        ))
-
-
-        await db.commit()
+        )
 
 
 
 # =========================
-# TÜM KULLANICULAR
+# TÜM KULLANICILAR
 # =========================
 
 async def get_users():
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        cursor = await db.execute("""
-        SELECT *
-        FROM users
+        rows = await conn.fetch("""
+
+            SELECT *
+
+            FROM users
+
+            ORDER BY id
+
         """)
 
-
-        return await cursor.fetchall()
+        return rows
 
 
 
@@ -132,19 +154,19 @@ async def get_users():
 
 async def get_user_count():
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        cursor = await db.execute("""
-        SELECT COUNT(*)
-        FROM users
+        count = await conn.fetchval("""
+
+            SELECT COUNT(*)
+
+            FROM users
+
         """)
 
-
-        result = await cursor.fetchone()
-
-
-        return result[0]
+        return count
 
 
 
@@ -154,23 +176,20 @@ async def get_user_count():
 
 async def add_admin(telegram_id):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        UPDATE users
+        await conn.execute(
+            """
+            UPDATE users
 
-        SET is_admin=1
+            SET is_admin=TRUE
 
-        WHERE telegram_id=?
-        """,
-
-        (
-            telegram_id,
-        ))
-
-
-        await db.commit()
+            WHERE telegram_id=$1
+            """,
+            telegram_id
+        )
 
 
 
@@ -180,19 +199,23 @@ async def add_admin(telegram_id):
 
 async def get_admins():
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        cursor = await db.execute("""
-        SELECT telegram_id, first_name
+        rows = await conn.fetch(
+            """
+            SELECT
+                telegram_id,
+                first_name
 
-        FROM users
+            FROM users
 
-        WHERE is_admin=1
-        """)
+            WHERE is_admin=TRUE
+            """
+        )
 
-
-        return await cursor.fetchall()
+        return rows
 
 
 
@@ -202,31 +225,22 @@ async def get_admins():
 
 async def is_admin(telegram_id):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        cursor = await db.execute("""
-        SELECT is_admin
+        result = await conn.fetchval(
+            """
+            SELECT is_admin
 
-        FROM users
+            FROM users
 
-        WHERE telegram_id=?
-        """,
+            WHERE telegram_id=$1
+            """,
+            telegram_id
+        )
 
-        (
-            telegram_id,
-        ))
-
-
-        result = await cursor.fetchone()
-
-
-        if result:
-
-            return result[0] == 1
-
-
-        return False
+        return bool(result)
 
 
 
@@ -241,34 +255,32 @@ async def add_event(
     repeat_type="none"
 ):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        INSERT INTO events
-        (
-            name,
-            event_date,
-            event_time,
-            repeat_type,
-            last_run,
-            reminder_sent
-        )
+        await conn.execute(
+            """
+            INSERT INTO events
+            (
+                name,
+                event_date,
+                event_time,
+                repeat_type,
+                last_run,
+                reminder_sent
+            )
 
-        VALUES (?,?,?,?,?,?)
-        """,
-
-        (
+            VALUES
+            ($1,$2,$3,$4,$5,$6)
+            """,
             name,
             event_date,
             event_time,
             repeat_type,
             "",
             ""
-        ))
-
-
-        await db.commit()
+        )
 
 
 
@@ -278,20 +290,21 @@ async def add_event(
 
 async def get_events():
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        cursor = await db.execute("""
-        SELECT *
+        rows = await conn.fetch(
+            """
+            SELECT *
 
-        FROM events
+            FROM events
 
-        ORDER BY id DESC
-        """)
+            ORDER BY id DESC
+            """
+        )
 
-
-        return await cursor.fetchall()
-
+        return rows
 
 
 # =========================
@@ -300,25 +313,21 @@ async def get_events():
 
 async def update_last_run(event_id):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        UPDATE events
+        await conn.execute(
+            """
+            UPDATE events
 
-        SET last_run=?
+            SET last_run=$1
 
-        WHERE id=?
-        """,
-
-        (
+            WHERE id=$2
+            """,
             datetime.now().strftime("%Y-%m-%d"),
-
             event_id
-        ))
-
-
-        await db.commit()
+        )
 
 
 
@@ -331,25 +340,21 @@ async def update_reminder_sent(
     reminder
 ):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        UPDATE events
+        await conn.execute(
+            """
+            UPDATE events
 
-        SET reminder_sent=?
+            SET reminder_sent=$1
 
-        WHERE id=?
-        """,
-
-        (
+            WHERE id=$2
+            """,
             str(reminder),
-
             event_id
-        ))
-
-
-        await db.commit()
+        )
 
 
 
@@ -361,23 +366,20 @@ async def reset_reminder_sent(
     event_id
 ):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        UPDATE events
+        await conn.execute(
+            """
+            UPDATE events
 
-        SET reminder_sent=''
+            SET reminder_sent=''
 
-        WHERE id=?
-        """,
-
-        (
-            event_id,
-        ))
-
-
-        await db.commit()
+            WHERE id=$1
+            """,
+            event_id
+        )
 
 
 
@@ -387,21 +389,18 @@ async def reset_reminder_sent(
 
 async def delete_event(event_id):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        DELETE FROM events
+        await conn.execute(
+            """
+            DELETE FROM events
 
-        WHERE id=?
-        """,
-
-        (
-            event_id,
-        ))
-
-
-        await db.commit()
+            WHERE id=$1
+            """,
+            event_id
+        )
 
 
 
@@ -411,19 +410,21 @@ async def delete_event(event_id):
 
 async def get_alliance():
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        cursor = await db.execute("""
-        SELECT *
+        row = await conn.fetchrow(
+            """
+            SELECT *
 
-        FROM alliance
+            FROM alliance
 
-        WHERE id=1
-        """)
+            WHERE id=1
+            """
+        )
 
-
-        return await cursor.fetchone()
+        return row
 
 
 
@@ -435,35 +436,37 @@ async def update_alliance(
     description
 ):
 
-    async with aiosqlite.connect(DATABASE) as db:
+    db = await get_pool()
 
+    async with db.acquire() as conn:
 
-        await db.execute("""
-        DELETE FROM alliance
-        """)
+        await conn.execute(
+            """
+            DELETE FROM alliance
+            """
+        )
 
+        await conn.execute(
+            """
+            INSERT INTO alliance
+            (
+                id,
+                name,
+                leader,
+                server,
+                rules,
+                description
+            )
 
-        await db.execute("""
-        INSERT INTO alliance
-        (
-            id,
+            VALUES
+            (1,$1,$2,$3,$4,$5)
+            """,
             name,
             leader,
             server,
             rules,
             description
         )
-
-        VALUES (1,?,?,?,?,?)
-        """,
-
-        (
-            name,
-            leader,
-            server,
-            rules,
-            description
-        ))
 
 
         await db.commit()
