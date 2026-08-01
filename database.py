@@ -128,11 +128,11 @@ async def add_user(user):
 # TÜM KULLANICILAR
 # =========================
 
+# =========================
+# TÜM KULLANICILAR
+# =========================
+
 async def get_users():
-
-    db = await get_pool()
-
-    async def get_users():
 
     db = await get_pool()
 
