@@ -424,6 +424,7 @@ async def get_alliance():
         )
 
         if row:
+
             return tuple(row)
 
         return None
