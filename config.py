@@ -3,10 +3,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 ADMIN_IDS = [
-    6357331553
+    int(x)
+    for x in os.getenv(
+        "ADMIN_IDS",
+        "6357331553"
+    ).split(",")
 ]
