@@ -4,10 +4,16 @@ from datetime import datetime
 
 from config import DATABASE_URL
 
+
 pool = None
 
 
+# =========================
+# CONNECTION POOL
+# =========================
+
 async def get_pool():
+
     global pool
 
     if pool is None:
@@ -33,7 +39,6 @@ async def init_db():
     async with db.acquire() as conn:
 
         await conn.execute("""
-
         CREATE TABLE IF NOT EXISTS users(
 
             id BIGSERIAL PRIMARY KEY,
@@ -46,12 +51,11 @@ async def init_db():
 
             is_admin BOOLEAN DEFAULT FALSE
 
-        );
-
+        )
         """)
 
-        await conn.execute("""
 
+        await conn.execute("""
         CREATE TABLE IF NOT EXISTS events(
 
             id BIGSERIAL PRIMARY KEY,
@@ -68,12 +72,11 @@ async def init_db():
 
             reminder_sent TEXT DEFAULT ''
 
-        );
-
+        )
         """)
 
-        await conn.execute("""
 
+        await conn.execute("""
         CREATE TABLE IF NOT EXISTS alliance(
 
             id INTEGER PRIMARY KEY,
@@ -88,14 +91,13 @@ async def init_db():
 
             description TEXT
 
-        );
-
+        )
         """)
 
 
 
 # =========================
-# KULLANICI EKLE
+# USER EKLE
 # =========================
 
 async def add_user(user):
@@ -112,11 +114,13 @@ async def add_user(user):
                 username,
                 first_name
             )
-            VALUES ($1,$2,$3)
+
+            VALUES($1,$2,$3)
 
             ON CONFLICT (telegram_id)
             DO NOTHING
             """,
+
             user.id,
             user.username,
             user.first_name
@@ -128,23 +132,25 @@ async def add_user(user):
 # TÜM KULLANICILAR
 # =========================
 
-# =========================
-# TÜM KULLANICILAR
-# =========================
-
 async def get_users():
 
     db = await get_pool()
 
     async with db.acquire() as conn:
 
-        rows = await conn.fetch("""
+        rows = await conn.fetch(
+            """
             SELECT *
             FROM users
             ORDER BY id
-        """)
+            """
+        )
 
-        return [tuple(row) for row in rows]
+        return [
+            tuple(row)
+            for row in rows
+        ]
+
 
 
 # =========================
@@ -157,15 +163,12 @@ async def get_user_count():
 
     async with db.acquire() as conn:
 
-        count = await conn.fetchval("""
-
+        return await conn.fetchval(
+            """
             SELECT COUNT(*)
-
             FROM users
-
-        """)
-
-        return count
+            """
+        )
 
 
 
@@ -187,6 +190,7 @@ async def add_admin(telegram_id):
 
             WHERE telegram_id=$1
             """,
+
             telegram_id
         )
 
@@ -204,9 +208,7 @@ async def get_admins():
 
         rows = await conn.fetch(
             """
-            SELECT
-                telegram_id,
-                first_name
+            SELECT telegram_id, first_name
 
             FROM users
 
@@ -214,7 +216,10 @@ async def get_admins():
             """
         )
 
-        return [tuple(row) for row in rows]
+        return [
+            tuple(row)
+            for row in rows
+        ]
 
 
 
@@ -236,6 +241,7 @@ async def is_admin(telegram_id):
 
             WHERE telegram_id=$1
             """,
+
             telegram_id
         )
 
@@ -273,6 +279,7 @@ async def add_event(
             VALUES
             ($1,$2,$3,$4,$5,$6)
             """,
+
             name,
             event_date,
             event_time,
@@ -284,14 +291,10 @@ async def add_event(
 
 
 # =========================
-# ETKİNLİKLERİ GETİR
+# ETKİNLİKLER
 # =========================
 
 async def get_events():
-
-    db = await get_pool()
-
-    async def get_events():
 
     db = await get_pool()
 
@@ -300,16 +303,22 @@ async def get_events():
         rows = await conn.fetch(
             """
             SELECT *
+
             FROM events
+
             ORDER BY id DESC
             """
         )
 
-        return [tuple(row) for row in rows]
+        return [
+            tuple(row)
+            for row in rows
+        ]
+
 
 
 # =========================
-# LAST RUN GÜNCELLE
+# LAST RUN
 # =========================
 
 async def update_last_run(event_id):
@@ -326,14 +335,16 @@ async def update_last_run(event_id):
 
             WHERE id=$2
             """,
+
             datetime.now().strftime("%Y-%m-%d"),
+
             event_id
         )
 
 
 
 # =========================
-# HATIRLATMA GÜNCELLE
+# REMINDER UPDATE
 # =========================
 
 async def update_reminder_sent(
@@ -353,19 +364,19 @@ async def update_reminder_sent(
 
             WHERE id=$2
             """,
+
             str(reminder),
+
             event_id
         )
 
 
 
 # =========================
-# HATIRLATMA SIFIRLA
+# REMINDER RESET
 # =========================
 
-async def reset_reminder_sent(
-    event_id
-):
+async def reset_reminder_sent(event_id):
 
     db = await get_pool()
 
@@ -379,6 +390,7 @@ async def reset_reminder_sent(
 
             WHERE id=$1
             """,
+
             event_id
         )
 
@@ -400,13 +412,14 @@ async def delete_event(event_id):
 
             WHERE id=$1
             """,
+
             event_id
         )
 
 
 
 # =========================
-# ALLIANCE BİLGİLERİ
+# ALLIANCE
 # =========================
 
 async def get_alliance():
@@ -418,14 +431,18 @@ async def get_alliance():
         row = await conn.fetchrow(
             """
             SELECT *
+
             FROM alliance
+
             WHERE id=1
             """
         )
 
+
         if row:
 
             return tuple(row)
+
 
         return None
 
@@ -449,6 +466,7 @@ async def update_alliance(
             """
         )
 
+
         await conn.execute(
             """
             INSERT INTO alliance
@@ -464,12 +482,10 @@ async def update_alliance(
             VALUES
             (1,$1,$2,$3,$4,$5)
             """,
+
             name,
             leader,
             server,
             rules,
             description
         )
-
-
-
