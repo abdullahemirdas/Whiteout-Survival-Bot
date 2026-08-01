@@ -16,7 +16,6 @@ scheduler = AsyncIOScheduler()
 bot_instance = None
 
 
-
 # =========================
 # BOT BAĞLAMA
 # =========================
@@ -40,7 +39,6 @@ def can_run_repeat(
 ):
 
     if not last_run:
-
         return True
 
 
@@ -66,27 +64,18 @@ def can_run_repeat(
 
 
     if repeat_type == "daily":
-
         return diff >= 1
 
-
     if repeat_type == "every_2_days":
-
         return diff >= 2
 
-
     if repeat_type == "every_3_days":
-
         return diff >= 3
 
-
     if repeat_type == "weekly":
-
         return diff >= 7
 
-
     if repeat_type == "monthly":
-
         return diff >= 30
 
 
@@ -100,37 +89,49 @@ def can_run_repeat(
 
 async def check_events():
 
-
     if bot_instance is None:
 
-        print("Bot bağlantısı yok")
+        print(
+            "Bot bağlantısı yok",
+            flush=True
+        )
 
         return
 
 
 
     events = await get_events()
-    print("Toplam etkinlik:", len(events), flush=True)
-    print("Kontrol edilen etkinlik:", event, flush=True)
-    
+
+
+    print(
+        "Toplam etkinlik:",
+        len(events),
+        flush=True
+    )
+
 
 
     now = datetime.now()
 
 
-
     print(
         "Scheduler kontrol:",
-        now.strftime("%H:%M:%S")
+        now.strftime("%H:%M:%S"),
+        flush=True
     )
 
 
 
     for event in events:
 
+        print(
+            "Kontrol edilen etkinlik:",
+            event,
+            flush=True
+        )
+
 
         try:
-
 
             event_id = event[0]
 
@@ -149,13 +150,6 @@ async def check_events():
 
 
             if not event_time:
-
-                continue
-
-
-
-            if ":" not in event_time:
-
                 continue
 
 
@@ -165,9 +159,9 @@ async def check_events():
 
 
             event_datetime = datetime.strptime(
-    f"{event_date} {event_time}",
-    "%d.%m.%Y %H:%M"
-)
+                f"{event_date} {event_time}",
+                "%d.%m.%Y %H:%M"
+            )
 
 
 
@@ -175,27 +169,29 @@ async def check_events():
 
 
 
+            print(
+                "EVENT:",
+                name,
+                "DIFF:",
+                diff,
+                flush=True
+            )
+
+
+
             reminder = None
 
 
-
-            # 30 dakika
 
             if timedelta(minutes=29) <= diff <= timedelta(minutes=31):
 
                 reminder = "30"
 
 
-
-            # 10 dakika
-
             elif timedelta(minutes=9) <= diff <= timedelta(minutes=11):
 
                 reminder = "10"
 
-
-
-            # 5 dakika
 
             elif timedelta(minutes=4) <= diff <= timedelta(minutes=6):
 
@@ -209,21 +205,11 @@ async def check_events():
 
 
 
-            print(
-                "Bildirim kontrol:",
-                name,
-                reminder
-            )
-
-
-
             if reminder_sent == reminder:
 
                 continue
 
 
-
-            # Tekrarlı etkinlik kontrolü
 
             if event_date == "REPEAT":
 
@@ -253,7 +239,6 @@ async def check_events():
             )
 
 
-
             await update_reminder_sent(
 
                 event_id,
@@ -265,14 +250,18 @@ async def check_events():
 
 
             print(
+
                 "Bildirim gönderildi:",
+
                 name,
-                reminder
+
+                reminder,
+
+                flush=True
+
             )
 
 
-
-            # 5 dakika sonrası yeni döngü
 
             if reminder == "5":
 
@@ -296,8 +285,13 @@ async def check_events():
 
 
             print(
+
                 "Scheduler hata:",
-                e
+
+                e,
+
+                flush=True
+
             )
 
 
@@ -307,9 +301,13 @@ async def check_events():
 # =========================
 
 async def send_notification(
+
     name,
+
     time,
+
     reminder
+
 ):
 
 
@@ -329,6 +327,7 @@ async def send_notification(
             await bot_instance.send_message(
 
                 telegram_id,
+
 
                 f"""
 🔔 ETKİNLİK HATIRLATMA
@@ -350,9 +349,15 @@ async def send_notification(
 
 
             print(
+
                 "Mesaj gönderilemedi:",
+
                 telegram_id,
-                e
+
+                e,
+
+                flush=True
+
             )
 
 
@@ -362,6 +367,12 @@ async def send_notification(
 # =========================
 
 def start_scheduler():
+
+
+    print(
+        "Scheduler başlatılıyor",
+        flush=True
+    )
 
 
     scheduler.add_job(
@@ -380,3 +391,9 @@ def start_scheduler():
 
 
     scheduler.start()
+
+
+    print(
+        "Scheduler aktif",
+        flush=True
+    )
