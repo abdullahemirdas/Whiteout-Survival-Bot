@@ -22,7 +22,8 @@ from handlers import (
 
 from scheduler import (
     start_scheduler,
-    set_bot
+    set_bot,
+    stop_scheduler
 )
 
 
@@ -31,11 +32,30 @@ from scheduler import (
 # =========================
 
 def handle_sigterm(signum, frame):
-    print("⚠️ Received SIGTERM signal", flush=True)
+
+    print(
+        "⚠️ Received SIGTERM signal",
+        flush=True
+    )
+
+    try:
+        stop_scheduler()
+
+    except Exception as e:
+
+        print(
+            "Scheduler kapatma hatası:",
+            e,
+            flush=True
+        )
+
     sys.exit(0)
 
 
-signal.signal(signal.SIGTERM, handle_sigterm)
+signal.signal(
+    signal.SIGTERM,
+    handle_sigterm
+)
 
 
 # =========================
@@ -43,7 +63,10 @@ signal.signal(signal.SIGTERM, handle_sigterm)
 # =========================
 
 async def health_check(request):
-    return web.Response(text="Whiteout ATA Bot aktif")
+
+    return web.Response(
+        text="Whiteout ATA Bot aktif"
+    )
 
 
 # =========================
@@ -59,6 +82,7 @@ async def start_web_server():
         health_check
     )
 
+
     port = int(
         os.environ.get(
             "PORT",
@@ -66,8 +90,11 @@ async def start_web_server():
         )
     )
 
+
     runner = web.AppRunner(app)
+
     await runner.setup()
+
 
     site = web.TCPSite(
         runner,
@@ -75,12 +102,15 @@ async def start_web_server():
         port
     )
 
+
     await site.start()
+
 
     print(
         f"🌐 Web server aktif: {port}",
         flush=True
     )
+
 
 
 # =========================
@@ -94,38 +124,108 @@ async def start_bot():
         flush=True
     )
 
+
     await init_db()
+
 
     bot = Bot(
         token=BOT_TOKEN
     )
 
+
     set_bot(bot)
+
 
     dp = Dispatcher()
 
-    dp.include_router(start.router)
-    dp.include_router(events.router)
-    dp.include_router(admin.router)
-    dp.include_router(repeat.router)
-    dp.include_router(broadcast.router)
-    dp.include_router(alliance.router)
-    dp.include_router(alliance_admin.router)
-    dp.include_router(contact.router)
+
+
+    dp.include_router(
+        start.router
+    )
+
+    dp.include_router(
+        events.router
+    )
+
+    dp.include_router(
+        admin.router
+    )
+
+    dp.include_router(
+        repeat.router
+    )
+
+    dp.include_router(
+        broadcast.router
+    )
+
+    dp.include_router(
+        alliance.router
+    )
+
+    dp.include_router(
+        alliance_admin.router
+    )
+
+    dp.include_router(
+        contact.router
+    )
+
 
     print(
         "⏰ Scheduler başlatılıyor...",
         flush=True
     )
 
+
     start_scheduler()
+
 
     print(
         "🤖 Whiteout ATA Bot Başlatıldı",
         flush=True
     )
 
-    await dp.start_polling(bot)
+
+    try:
+
+        await dp.start_polling(
+            bot
+        )
+
+
+    finally:
+
+
+        print(
+            "Bot kapatılıyor...",
+            flush=True
+        )
+
+
+        try:
+
+            stop_scheduler()
+
+
+        except Exception as e:
+
+            print(
+                "Scheduler kapatma hatası:",
+                e,
+                flush=True
+            )
+
+
+        await bot.session.close()
+
+
+        print(
+            "Bot bağlantısı kapatıldı",
+            flush=True
+        )
+
 
 
 # =========================
@@ -139,6 +239,7 @@ async def main():
     await start_bot()
 
 
+
 # =========================
 # START
 # =========================
@@ -147,7 +248,18 @@ if __name__ == "__main__":
 
     try:
 
-        asyncio.run(main())
+        asyncio.run(
+            main()
+        )
+
+
+    except KeyboardInterrupt:
+
+        print(
+            "Manuel durduruldu",
+            flush=True
+        )
+
 
     except Exception as e:
 
