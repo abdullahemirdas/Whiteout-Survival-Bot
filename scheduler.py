@@ -66,14 +66,18 @@ def can_run_repeat(
     if repeat_type == "daily":
         return diff >= 1
 
+
     if repeat_type == "every_2_days":
         return diff >= 2
+
 
     if repeat_type == "every_3_days":
         return diff >= 3
 
+
     if repeat_type == "weekly":
         return diff >= 7
+
 
     if repeat_type == "monthly":
         return diff >= 30
@@ -124,6 +128,7 @@ async def check_events():
 
     for event in events:
 
+
         print(
             "Kontrol edilen etkinlik:",
             event,
@@ -145,22 +150,22 @@ async def check_events():
 
             last_run = event[5] or ""
 
-            reminder_sent = event[6] if len(event) > 6 else ""
+            reminder_sent = event[6] or ""
 
 
 
             if not event_time:
+
                 continue
 
 
 
-            hour, minute = event_time.split(":")
-
-
-
             event_datetime = datetime.strptime(
+
                 f"{event_date} {event_time}",
+
                 "%d.%m.%Y %H:%M"
+
             )
 
 
@@ -211,8 +216,9 @@ async def check_events():
 
 
 
-            if event_date == "REPEAT":
+            # tekrar eden etkinlik kontrolü
 
+            if repeat_type != "none":
 
                 if not can_run_repeat(
 
@@ -237,6 +243,7 @@ async def check_events():
                 reminder
 
             )
+
 
 
             await update_reminder_sent(
@@ -273,13 +280,6 @@ async def check_events():
                 )
 
 
-                await reset_reminder_sent(
-
-                    event_id
-
-                )
-
-
 
         except Exception as e:
 
@@ -293,6 +293,8 @@ async def check_events():
                 flush=True
 
             )
+
+
 
 
 
@@ -362,6 +364,7 @@ async def send_notification(
 
 
 
+
 # =========================
 # SCHEDULER BAŞLAT
 # =========================
@@ -373,6 +376,7 @@ def start_scheduler():
         "Scheduler başlatılıyor",
         flush=True
     )
+
 
 
     scheduler.add_job(
@@ -390,10 +394,31 @@ def start_scheduler():
     )
 
 
+
     scheduler.start()
+
 
 
     print(
         "Scheduler aktif",
         flush=True
     )
+
+
+
+
+# =========================
+# SCHEDULER DURDUR
+# =========================
+
+def stop_scheduler():
+
+
+    if scheduler.running:
+
+        scheduler.shutdown()
+
+        print(
+            "Scheduler durduruldu",
+            flush=True
+        )
