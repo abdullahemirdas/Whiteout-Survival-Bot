@@ -132,16 +132,19 @@ async def get_users():
 
     db = await get_pool()
 
+    async def get_users():
+
+    db = await get_pool()
+
     async with db.acquire() as conn:
 
-       rows = await conn.fetch("""
-    SELECT *
-    FROM users
-    ORDER BY id
-""")
+        rows = await conn.fetch("""
+            SELECT *
+            FROM users
+            ORDER BY id
+        """)
 
-return [tuple(row) for row in rows]
-
+        return [tuple(row) for row in rows]
 
 
 # =========================
@@ -288,17 +291,21 @@ async def get_events():
 
     db = await get_pool()
 
+    async def get_events():
+
+    db = await get_pool()
+
     async with db.acquire() as conn:
 
-       rows = await conn.fetch(
-    """
-    SELECT *
-    FROM events
-    ORDER BY id DESC
-    """
-)
+        rows = await conn.fetch(
+            """
+            SELECT *
+            FROM events
+            ORDER BY id DESC
+            """
+        )
 
-return [tuple(row) for row in rows]
+        return [tuple(row) for row in rows]
 
 
 # =========================
@@ -411,17 +418,15 @@ async def get_alliance():
         row = await conn.fetchrow(
             """
             SELECT *
-
             FROM alliance
-
             WHERE id=1
             """
         )
 
         if row:
-    return tuple(row)
+            return tuple(row)
 
-return None
+        return None
 
 
 
@@ -466,4 +471,4 @@ async def update_alliance(
         )
 
 
-        await db.commit()
+
