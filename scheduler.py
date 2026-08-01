@@ -110,6 +110,9 @@ async def check_events():
 
 
     events = await get_events()
+    print("Toplam etkinlik:", len(events), flush=True)
+    print("Kontrol edilen etkinlik:", event, flush=True)
+    
 
 
     now = datetime.now()
