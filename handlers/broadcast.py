@@ -9,7 +9,6 @@ from database import get_users, is_admin
 router = Router()
 
 
-
 # =========================
 # DUYURU BAŞLAT
 # =========================
@@ -26,19 +25,15 @@ async def broadcast_start(
         )
         return
 
-
     await state.clear()
-
 
     await message.answer(
         "📢 Göndermek istediğiniz duyuruyu yazınız."
     )
 
-
     await state.set_state(
         BroadcastForm.message
     )
-
 
 
 # =========================
@@ -55,56 +50,78 @@ async def send_broadcast(
         await state.clear()
         return
 
-
     users = await get_users()
 
+    print("=" * 60, flush=True)
+    print(f"📊 Database kullanıcı sayısı: {len(users)}", flush=True)
+    print("=" * 60, flush=True)
 
     success = 0
     failed = 0
 
-
-    text = f"""
-📢 WHITEOUT SURVIVAL ATA
+    text = f"""📢 WHITEOUT SURVIVAL ATA
 
 {message.text}
 """
-
 
     await message.answer(
         "⏳ Duyuru gönderiliyor..."
     )
 
-
     for user in users:
 
         telegram_id = user[1]
 
-
         try:
 
+            print(
+                f"➡️ Mesaj gönderiliyor: {telegram_id}",
+                flush=True
+            )
+
             await message.bot.send_message(
-                telegram_id,
-                text
+                chat_id=telegram_id,
+                text=text
+            )
+
+            print(
+                f"✅ Başarılı: {telegram_id}",
+                flush=True
             )
 
             success += 1
 
+        except Exception as e:
 
-        except Exception:
+            print(
+                f"❌ HATA ({telegram_id})",
+                flush=True
+            )
+
+            print(
+                type(e).__name__,
+                flush=True
+            )
+
+            print(
+                str(e),
+                flush=True
+            )
 
             failed += 1
 
-
+    print("=" * 60, flush=True)
+    print(f"Başarılı : {success}", flush=True)
+    print(f"Başarısız: {failed}", flush=True)
+    print("=" * 60, flush=True)
 
     await message.answer(
-        f"""
-✅ Duyuru tamamlandı.
+        f"""✅ Duyuru tamamlandı.
 
 📨 Başarılı: {success}
 
 ❌ Başarısız: {failed}
 """
     )
-
 
     await state.clear()
