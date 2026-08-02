@@ -312,26 +312,53 @@ async def send_notification(
 
 ):
 
+    print(">>> send_notification başladı", flush=True)
 
     users = await get_users()
 
-
+    print(f">>> Kullanıcı sayısı: {len(users)}", flush=True)
 
     for user in users:
 
-
         telegram_id = user[1]
 
+        print(f">>> Mesaj gönderiliyor: {telegram_id}", flush=True)
 
         try:
-
 
             await bot_instance.send_message(
 
                 telegram_id,
 
-
                 f"""
+🔔 ETKİNLİK HATIRLATMA
+
+⚔️ {name}
+
+⏰ Saat: {time}
+
+⏳ {reminder} dakika sonra başlayacak.
+"""
+
+            )
+
+            print(f">>> Mesaj gönderildi: {telegram_id}", flush=True)
+
+        except Exception as e:
+
+            print(
+
+                "Mesaj gönderilemedi:",
+
+                telegram_id,
+
+                e,
+
+                flush=True
+
+            )
+
+    print(">>> send_notification bitti", flush=True)
 🔔 ETKİNLİK HATIRLATMA
 
 
