@@ -158,32 +158,29 @@ async def check_events():
 
                 continue
 
-
-
             # Tekrarlayan etkinlik ise bugünün tarihini kullan
-if event_date == "REPEAT":
+            if event_date == "REPEAT":
 
-    today = now.strftime("%d.%m.%Y")
+                today = now.strftime("%d.%m.%Y")
 
-    event_datetime = datetime.strptime(
+                event_datetime = datetime.strptime(
 
-        f"{today} {event_time}",
+                    f"{today} {event_time}",
 
-        "%d.%m.%Y %H:%M"
+                    "%d.%m.%Y %H:%M"
 
-    )
+                )
 
-# Normal etkinlik
-else:
+            # Normal etkinlik
+            else:
 
-    event_datetime = datetime.strptime(
+                event_datetime = datetime.strptime(
 
-        f"{event_date} {event_time}",
+                    f"{event_date} {event_time}",
 
-        "%d.%m.%Y %H:%M"
+                    "%d.%m.%Y %H:%M"
 
-    )
-
+                )
 
             diff = event_datetime - now
 
