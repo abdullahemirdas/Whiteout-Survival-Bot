@@ -359,35 +359,7 @@ async def send_notification(
             )
 
     print(">>> send_notification bitti", flush=True)
-🔔 ETKİNLİK HATIRLATMA
 
-
-⚔️ {name}
-
-
-⏰ Saat: {time}
-
-
-⏳ {reminder} dakika sonra başlayacak.
-"""
-
-            )
-
-
-        except Exception as e:
-
-
-            print(
-
-                "Mesaj gönderilemedi:",
-
-                telegram_id,
-
-                e,
-
-                flush=True
-
-            )
 
 
 
