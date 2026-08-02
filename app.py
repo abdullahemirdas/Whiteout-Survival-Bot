@@ -1,5 +1,6 @@
 import asyncio
 import os
+import traceback
 
 from aiohttp import web
 from aiogram import Bot, Dispatcher
@@ -33,7 +34,6 @@ async def health_check(request):
     return web.Response(
         text="Whiteout ATA Bot aktif"
     )
-
 
 
 # =========================
@@ -79,7 +79,6 @@ async def start_web_server():
     )
 
 
-
 # =========================
 # BOT BAŞLAT
 # =========================
@@ -95,7 +94,6 @@ async def start_bot():
     await init_db()
 
 
-
     bot = Bot(
         token=BOT_TOKEN
     )
@@ -104,10 +102,10 @@ async def start_bot():
     set_bot(bot)
 
 
-
     dp = Dispatcher()
 
 
+    # ROUTERS
 
     dp.include_router(
         start.router
@@ -142,7 +140,6 @@ async def start_bot():
     )
 
 
-
     print(
         "⏰ Scheduler başlatılıyor...",
         flush=True
@@ -152,30 +149,67 @@ async def start_bot():
     start_scheduler()
 
 
-
     print(
         "🤖 Whiteout ATA Bot Başlatıldı",
         flush=True
     )
 
 
+    # =========================
+    # OTOMATİK RESTART KORUMASI
+    # =========================
 
-    try:
+    while True:
 
-        await dp.start_polling(
-            bot
-        )
+        try:
 
-
-    finally:
-
-        print(
-            "Bot kapatılıyor...",
-            flush=True
-        )
+            await dp.start_polling(
+                bot
+            )
 
 
-        await bot.session.close()
+        except asyncio.CancelledError:
+
+            print(
+                "🛑 Bot kapatma sinyali aldı",
+                flush=True
+            )
+
+            break
+
+
+        except Exception as e:
+
+            print(
+                f"⚠️ Polling hatası: {e}",
+                flush=True
+            )
+
+
+            traceback.print_exc()
+
+
+            print(
+                "🔄 10 saniye sonra yeniden başlatılıyor...",
+                flush=True
+            )
+
+
+            await asyncio.sleep(10)
+
+
+
+    # =========================
+    # TEMİZ KAPATMA
+    # =========================
+
+    print(
+        "Bot kapatılıyor...",
+        flush=True
+    )
+
+
+    await bot.session.close()
 
 
 
@@ -219,4 +253,5 @@ if __name__ == "__main__":
             flush=True
         )
 
-        raise
+
+        traceback.print_exc()
